@@ -1,0 +1,19 @@
+* NyaoFn
+** License
+Released under Ed's official no guarantees, non-profit, dont-care license to leave me alone.
+** Abstract
+This repo contains "useful" functions for vimscript done in slightly more functional way, mainly wrapping around existing vim functions so that they can be curried. It is the backbone of a lot of my vimscript work this year and furthers goals such as making my other plugins less accessible, and wasting your time with extant but woefully incomplete documentation. Essentially I add to this plugin whenever I'm working on something else and need a function I haven't made a wrapper for yet.
+
+All vimscript libraries that try to solve the awkwardness of vimscript or missing functionality of vimscript are pretty much a bad idea, and this one can only be worse because it in fact makes it more awkward. Enjoy!
+
+** Neovim
+I don't use NeoVim, sorry. A few things like jobs and popups use different functions in neovim than BramVim, because NeoVim added there's first and Bram made his own flavour of everything when he felt compelled to add very popular features from neovim into vim. We now need a jQuery style wrapper for Vim, oh the joys of software. Not that everyone working with NeoVim isn't writing in Lua anyway.
+** Installation
+#+NAME: NyaoFn
+#+BEGIN_SRC <language> <switches> <header arguments>
+mkdir -p ~/.vim/pack/eg/opt/nyaofn
+git clone https://github.com/EdwardGallant/nyaofn.git ~/.vim/pack/eg/opt/nyaofn
+vim ~/.vimrc
+# vim's packadd command... run it manually or paste it in your vimrc, it's up to you!
+pa nyaofn
+#+END_SRC
