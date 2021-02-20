@@ -1,0 +1,281 @@
+*nyaofn.txt*  functional programming for vim
+
+Author:  Edward Gallant
+License: shrug
+
+
+7 tabs
+
+INTRODUCTION						*nyaofn*
+A functional programming library for vim making heavy use of vim's lambda
+syntax. Tremble in fear.
+
+FUNCTIONS						*nyaofn-functions*
+
+
+
+ARRAY							*nyaofn-array-functions*
+
+Reduce 							*nyaofn-reduce()*
+Reduce :: (a -> a -> a) -> a -> [a] -> a
+
+	Same as |nyaofn-fold()| but accepts an initial value as its second
+	argument.
+
+	Ex >
+	  " returns "DABC"
+	  echo g:NyaoFn.Reduce(g:NyaoFn.Concat)( 'D' )(['A','B','C'])
+<
+
+ReduceR 						*nyaofn-reducer()*
+ReduceR :: (a -> a -> a) -> a -> [a] -> a
+
+Fold 							*nyaofn-fold()*
+Fold :: (a -> a -> a) -> [a] -> a
+
+	Takes a function which combines two values into one, then takes an
+	array and uses that function to combine all values into one value.
+
+	Ex >
+	  " returns "ABC"
+	  echo g:NyaoFn.Fold(g:NyaoFn.Concat)(['A','B','C'])
+<
+
+FoldR 							*nyaofn-foldr()*
+
+	Same as Fold but starts from final item and finishes with first item
+	in array.
+
+	Ex >
+	  " returns "CBA"
+	  echo g:NyaoFn.FoldR(g:NyaoFn.Concat)(['A','B','C'])
+<
+
+Map 							*nyaofn-map()*
+Map :: (a -> a) -> [a]
+
+	Takes a function that recieves an argument of any type and returns a
+	value of any type, then takes an array and runs that function on each
+	element returning a new array of new values.
+
+	Ex >
+	  " returns ['Aa', 'Ab', 'Ac']
+	  echo g:NyaoFn.Map( g:NyaoFn.Concat('A') )( ['a','b','c'] )
+<
+
+Sort 							*nyaofn-sort()*
+Sort :: (a -> a -> 1 | 0 | -1 ) -> [a] -> [a]
+
+	Takes a function which takes two values and must return zero if they
+	are equal, 1 or bigger if the first one sorts after the second one, -1
+	or smaller if the first one sorts before the second one, then takes an
+	array to be sorted and returns the sorted array.
+
+	Ex >
+	  " returns ['a', 'b', 'c']
+	  echo g:NyaoFn.Sort({ a -> { b -> a > b } })(['b', 'a', 'c'])
+<
+
+GroupBy 						*nyaofn-groupby()*
+GroupBy :: (a -> a -> bool) -> [a] -> [[a]]
+
+	Takes a function which compares two values and returns 1 if they
+	should be grouped together, and 0 if they should not, then takes an
+	array of values and returns an array of arrays of grouped values.
+
+	Ex >
+	  " returns [ [{'name':'a', 'lvl':2}, {'name':'a','lvl':1}], [{'name':'b'}]]
+	  echo g:NyaoFn.GroupBy({ a -> { b -> a.name == b.name } })([ {'name':'a', 'lvl':2}, {'name':'a','lvl':1}, {'name':'b'} ])
+<
+
+GroupToObj 						*nyaofn-grouptoobj()*
+GroupToObj :: (a -> a -> bool) -> [a] -> [[a]]
+
+
+	Ex >
+	  echo g:NyaoFn.GroupToObj = { f -> { ary -> s:N.Reduce( s:GroupToObjHelper(f) )({})(ary) } }
+<
+
+Find 							*nyaofn-find()*
+
+	let s:N.Find = { predicate -> { ary -> s:_Find( predicate, ary) } }
+
+MaybeFind 						*nyaofn-maybefind()*
+
+	let s:N.MaybeFind = { predicate -> { ary -> s:N.maybe(s:_Find( predicate, ary)) } }
+
+Contains 						*nyaofn-contains()*
+
+
+	let s:N.Contains = { predicate -> { ary -> s:N.IsNotNothing( s:N.Find(predicate)(ary) ) } }
+
+
+STRING
+
+IsBlank 						*nyaofn-isblank()*
+IsBlank :: string -> 1 | 0
+
+	Tests a string == ''
+
+	Ex >
+	  " 1
+	  echo g:NyaoFn.IsBlank('')
+	  " 0
+	  echo g:NyaoFn.IsBlank('anything')
+	<
+
+MISC							*nyaofn-misc-functions*
+
+Chrome	 						*nyaofn-chrome()*
+Chrome :: string -> ()
+
+	Ex >
+	  call g:NyaoFn.Chrome('https://github.com')
+<
+
+LazyChrome 						*nyaofn-lazychrome()*
+LazyChrome :: string -> (() -> ())
+
+	Like |nyaofn-chrome()| but doesn't execute immediately
+
+	let s:N.LazyChrome           = { link -> { -> s:N.Chrome(link) } }
+
+GoToLink 						*nyaofn-gotolink()*
+GoToLink :: string -> ()
+
+	Same as |nyaofn-chrome()| but guard invalid values with |nyaofn-isblank()|
+
+	Ex >
+	  call g:NyaoFn.GoToLink('https://github.com')
+	<
+
+MISSING DOCUMENTATION
+
+Remap
+Nno
+Uno
+Ino
+
+Exe
+LazyExe
+Normal
+LazyNormal
+
+BufNr
+ThisBufNr
+
+MatchStr
+MatchStrBool
+MatchLink
+MatchFirstWord
+
+LazyExpand
+
+WordUnderCursor
+MatchLinkUnderCursor
+
+LazyGetLink
+LazyGetLineNr
+
+ThisLine
+ThisLineNr
+
+CurrentFilename
+
+System
+LazySystem
+
+Substitute
+ToUpper
+ToLower
+
+FindStrInAry
+SubFirstWord
+
+SetLine
+SetThisLine
+ChangeThisLine
+
+IfElse
+When
+Unless
+
+ReadFile
+FileReadable
+WriteFile
+MakeDir
+IsDirectory
+GetPathHead
+GetPathTail
+WriteFileAndPath
+PrependToFile
+
+Split
+Words
+Lines
+Join
+Unwords
+Tail
+Head
+HeadTail
+
+GitBranchName
+GitLastTwentyCommits
+
+SetFt
+Popup
+ClosePopup
+PopupTL
+PopupTLNoTitle
+PopupCNoTitle
+RubyPopupTL
+MarkdownPopupTL
+
+SystemToQFList
+SnakeCase
+
+C Compose
+FoldCompose
+
+Type
+ToString
+Lens
+MaybeLens
+
+Take
+Drop
+Prop
+SetProp
+Flatten
+Paragraphs
+
+SplitAryAt
+TakeWhile
+DropWhile
+DropTakeWhile
+
+Flip
+Eq
+Fst
+Snd
+NotEq
+ConcatArray
+Concat
+
+maybe
+Maybe
+IsNothing
+Nothing
+
+LetObj
+Echo
+Cd
+Edit
+Explore
+LazyEcho
+Trace
+Input
+
+vim:autoindent noexpandtab tabstop=8 shiftwidth=8
+vim:se modifiable
+vim:tw=78:et:ft=help:norl:
