@@ -63,18 +63,19 @@ let s:N.LazySequence = { fns -> { -> map(fns, {_, fn -> fn()}) }}
 " This can be used like Trace... Maybe should rename it, but oh well
 " I'll just alias it
 " s:N.Echo :: msg -> () msg
-let s:N.Echo      = { msg -> s:_Echo(msg) }
-let s:N.Echom     = { msg -> s:_Echom(msg) }
-let s:N.Echoerr   = { msg -> s:_Echoerr(msg) }
-let s:N.Unlet     = { var -> s:_Unlet(var) }
-let s:N.Cd        = { path -> s:_Cd(path) }
-let s:N.Edit      = { path -> s:_Edit(path) }
-let s:N.SplitEdit = { path -> s:_SplitEdit(path) }
+let s:N.Echo        = { msg -> s:_Echo(msg) }
+let s:N.Echom       = { msg -> s:_Echom(msg) }
+let s:N.Echoerr     = { msg -> s:_Echoerr(msg) }
+let s:N.Unlet       = { var -> s:_Unlet(var) }
+let s:N.Cd          = { path -> s:_Cd(path) }
+let s:N.Edit        = { path -> s:_Edit(path) }
+let s:N.SplitEdit   = { path -> s:_SplitEdit(path) }
 " let s:N.SilentSplitEdit = { path -> s:_SilentSplitEdit(path) }
-let s:N.Explore   = { path -> s:_Explore(path) }
-let s:N.LazyEcho  = { msg -> { -> s:_Echo(msg) } }
-let s:N.Trace     = { msg -> s:_Echo(msg) }
-let s:N.Input     = { str -> input(str) }
+let s:N.Explore     = { path -> s:_Explore(path) }
+let s:N.LazyEcho    = { msg -> { -> s:_Echo(msg) } }
+let s:N.LazyEchoerr = { msg -> { -> s:_Echoerr(msg) } }
+let s:N.Trace       = { msg -> s:_Echo(msg) }
+let s:N.Input       = { str -> input(str) }
 
 " call s:N.Sequence([s:N.LazyEcho('A'), s:N.LazyEcho('B') ])
 
@@ -298,6 +299,53 @@ let s:N.DF            = s:N.DiscardFn
 let s:N.LazyDiscardFn = { f -> { x -> { _ -> f(x) } } }
 let s:N.LDF           = s:N.LazyDiscardFn
 
+" TODO: There is a such a function/ monad in haskell which is called Reader,
+" and it is meant to read a value from the environment and pass it on into a
+" function
+"
+" newtype Reader e a = Reader (e -> a)
+" runReader :: Reader e a -> e -> a
+" runReader (Reader f) e = f e
+"
+" Reader here is a monad... 
+"
+" so basically what we want is to intialize a reader which always gets an
+" environment variable we're interested in, and then forever after when we
+" call map on that monad it will take a function which will automatically be
+" fed our environment variable as it exists at that time
+"
+" Not sure this is any good. Doesn't help me to get around the need to get the
+" filetype for the buffer before
+"
+" something like
+" fu! s:_ReaderOf(f) dict
+"   let o = copy(self)
+"   let o.v = a:f
+"   return o
+" endfu
+
+" " I think rather than falsey, I explicitly only want to pass through if it is
+" " specifically a Nothing
+" fu! s:_ReaderMap(f) dict
+"   return a:f( self.v() )
+" endfu
+
+" let s:N.Reader = { 'Of': function('s:_ReaderOf')
+"                \ , 'Map': function('s:_ReaderMap')
+"                \ }
+
+" let s:N.reader   = { f -> s:N.Reader.Of(f) }
+
+" let GetFileType = s:N.reader( { -> &ft } )
+" call GetFileType.Map( s:N.Echo )
+
+
+" let s:N.readerMap = { f -> { reader -> s:N.Reader.Of( f( maybe.v ) ) } }
+" let s:N.maybeMap = { f -> { maybe -> s:N.IsNothing( maybe.v ) ? maybe : s:N.Maybe.Of( f( maybe.v ) ) } }
+
+
+" a e -> a -> e -> f
+
 " echo s:N.DiscardFn( { -> 'bears' } )( 20 )
 
 " let s:N.ThisLine = s:N.LazyGetLine('.')
@@ -458,6 +506,9 @@ let s:N.SetQFList = { ary -> setqflist( ary ) }
 " note the last arg is the key you want to trigger, eg because you could want
 " to map more than one key to the same thing, but the other way around is not
 " possible (except maybe for buflocal mapping or something like that)
+"
+" currently returns a string, but actually I think I should have LazyMap,
+" and that should be returned with the lamda to undo the mapping.
 fu! s:_Map( mode, flags, rhs, lhs )
   exe ''.a:mode.'no '.a:flags->split(',')->map({_, v -> '<'.v.'>'})->join('').' '.a:lhs.' '.a:rhs
   return ''.a:mode.'no '.a:flags->split(',')->map({_, v -> '<'.v.'>'})->join('').' '.a:lhs.' '.a:rhs
@@ -556,7 +607,20 @@ fu! s:_GetVisualSection()
   return join(lines, "\n")
 endfunction
 
+fu! s:_GetVisualSectionAry()
+  let [line_start, column_start] = getpos("'<")[1:2]
+  let [line_end, column_end] = getpos("'>")[1:2]
+  let lines = getline(line_start, line_end)
+  if len(lines) == 0
+    return ''
+  endif
+  let lines[-1] = lines[-1][: column_end - (&selection == 'inclusive' ? 1 : 2)]
+  let lines[0] = lines[0][column_start - 1:]
+  return lines
+endfunction
+
 let s:N.GetVisualSelection = {  -> s:_GetVisualSection() }
+let s:N.GetVisualSelectionAry = {  -> s:_GetVisualSectionAry() }
 
 " this seems to do the job right... what gives
 " vno <f3> :<C-u>call g:NyaoFn.Map(g:NyaoFn.Echo)(g:NyaoFn.Lines(g:NyaoFn.GetVisualSelection()))<CR>
@@ -636,6 +700,8 @@ let s:N.FileReadable = { path -> filereadable(path) }
 let s:N.WriteFile = { flags -> { path -> { ary -> [ writefile(ary,path,flags), path ][1] } } }
 " echo s:N.WriteFile('a')( $HOME . '/.vim/hello_code_bear.txt' )([ 'heelllllo!' ])
 
+let s:N.ClearFileContents = { path -> s:N.WriteFile('')( path )([]) }
+
 " currently returns boolean... how to get it to return string
 " very stupid and hacky way to do it, but I guess it does the job... would
 " probably be nicer just to use fu! so I can have more than one line
@@ -650,10 +716,14 @@ let s:N.MakeDir = s:N.Unless( s:N.IsDirectory )( s:N._MakeDir('p') )
 " echo s:N.MakeDir($HOME.'/.vim/codebeartestdir/nesteddir')
 
 " s:N.GetPathHead :: path -> pathhead
-let s:N.GetPathHead = { path -> '/'.((path)->split('/')[0:-2]->join('/')) }
+" nvim doesn't support object->function syntax... :P
+" let s:N.GetPathHead = { path -> '/'.((path)->split('/')[0:-2]->join('/')) }
+let s:N.GetPathHead = { path -> '/' . join(split(path, '/')[0:-2], '/') }
+" echo g:NyaoFn.GetPathHead($HOME.'/.vim/codebeartestdir/nesteddir')
 
 " s:N.GetPathTail :: path -> pathhead
-let s:N.GetPathTail = { path -> (path->split('/')[-1]) }
+let s:N.GetPathTail = { path -> split(path, '/')[-1] }
+" echom s:N.GetPathTail($HOME.'/.vim/codebeartestdir/nesteddir')
 
 " s:N.WriteFileAndPath :: flags -> path -> ary -> path
 let s:N.WriteFileAndPath = { flags -> { path -> { ary -> s:N.WriteFile(flags)( s:N.MakeDir( s:N.GetPathHead(path) ).'/'.s:N.GetPathTail(path) )(ary)  }} }
@@ -679,6 +749,8 @@ let s:N.HeadTail = { ary -> [ ary[0], ary[1:-1] ] }
 
 " let s:N.GitBranchName = { -> s:N.Head( s:N.Lines( s:N.System('git branch --show-current') ) ) }
 " let s:N.GitLastTwentyCommits = { -> s:N.Lines( s:N.System('git log --pretty=oneline | head -n 20') ) }
+
+let s:N.GetFT = { -> &ft }
 
 let s:N.SetFT = { ft -> { bufnr -> s:N.Snd([ setbufvar( winbufnr( bufnr ), '&filetype', ft), bufnr ]) } }
 let s:N.Popup = { options -> { text -> popup_create( text, options() ) } }
